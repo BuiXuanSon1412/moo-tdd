@@ -283,6 +283,8 @@ def repair(individual: Individual, problem: Problem):
     k = len(problem.customer_list) + 1
     d = len(problem.customer_list) + problem.number_of_trucks
 
+    # decode individual into a general solution which possibly get population
+    # extract gene and its index of chromosome to fix later on
     for i in range(len(chromosome[0])):
         if chromosome[0][i] >= k and chromosome[0][i] < d:
             truck_routes.append(tmp_truck_route)
@@ -302,7 +304,8 @@ def repair(individual: Individual, problem: Problem):
             tmp_drone_route.append((i, chromosome[0][i]))
 
     truck_custs = [cust for route in truck_routes for cust in route]
-
+    depot = 0
+    truck_custs.append(depot)
     # repair drone_routes:
     #   ensure all customers are feasible for drone capacity
     #   ensure all customers are feasible for drone energy
@@ -327,7 +330,6 @@ def repair(individual: Individual, problem: Problem):
 
     # repair truck_routes:
     #   ensure all routes are feasible for truck capacity
-    pass
 
 
 # the individual can be decoded only when it is feasible
