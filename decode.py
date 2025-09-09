@@ -269,15 +269,6 @@ def extract_routes(chromosome, problem: Problem):
     return truck_routes, drone_routes
 
 
-class State:
-    def __init__(self):
-        pass
-
-
-def update_state():
-    pass
-
-
 def repair(individual: Individual, problem: Problem):
     chromosome = individual.chromosome
 
@@ -310,7 +301,7 @@ def repair(individual: Individual, problem: Problem):
         elif chromosome[1][i] == 1:
             tmp_drone_route.append((i, chromosome[0][i]))
 
-    truck_custs = [(cust for cust in route) for route in truck_routes]
+    truck_custs = [cust for route in truck_routes for cust in route]
 
     # repair drone_routes:
     #   ensure all customers are feasible for drone capacity
@@ -344,8 +335,9 @@ def decode(individual: Individual, problem: Problem):
     chromosome = individual.chromosome
     truck_routes, drone_routes = extract_routes(chromosome, problem)
 
-    truck_custs = [(cust for cust in route) for route in truck_routes]
-
+    truck_custs = [cust for route in truck_routes for cust in route]
+    depot = 0
+    truck_custs.append(depot)
     # split sequence of drone customers into trips
     # and determine launching node and landing node
     drone_trips = [[]]
@@ -362,7 +354,6 @@ def decode(individual: Individual, problem: Problem):
                 )
 
                 rem_truck_custs = [cust for cust in truck_custs if cust != lch_cust]
-
                 pred_ld_cust = min(
                     rem_truck_custs,
                     key=lambda truck_cust: problem.distance_matrix_drone[drone_cust][
