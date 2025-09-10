@@ -269,15 +269,6 @@ def extract_routes(chromosome, problem: Problem):
     return truck_routes, drone_routes
 
 
-class State:
-    def __init__(self):
-        pass
-
-
-def update_state():
-    pass
-
-
 def repair(individual: Individual, problem: Problem):
     chromosome = individual.chromosome
 
@@ -292,6 +283,8 @@ def repair(individual: Individual, problem: Problem):
     k = len(problem.customer_list) + 1
     d = len(problem.customer_list) + problem.number_of_trucks
 
+    # decode individual into a general solution which possibly get population
+    # extract gene and its index of chromosome to fix later on
     for i in range(len(chromosome[0])):
         if chromosome[0][i] >= k and chromosome[0][i] < d:
             truck_routes.append(tmp_truck_route)
@@ -310,8 +303,9 @@ def repair(individual: Individual, problem: Problem):
         elif chromosome[1][i] == 1:
             tmp_drone_route.append((i, chromosome[0][i]))
 
-    truck_custs = [(cust for cust in route) for route in truck_routes]
-
+    truck_custs = [cust for route in truck_routes for cust in route]
+    depot = 0
+    truck_custs.append(depot)
     # repair drone_routes:
     #   ensure all customers are feasible for drone capacity
     #   ensure all customers are feasible for drone energy
@@ -336,7 +330,6 @@ def repair(individual: Individual, problem: Problem):
 
     # repair truck_routes:
     #   ensure all routes are feasible for truck capacity
-    pass
 
 
 # the individual can be decoded only when it is feasible
@@ -344,8 +337,9 @@ def decode(individual: Individual, problem: Problem):
     chromosome = individual.chromosome
     truck_routes, drone_routes = extract_routes(chromosome, problem)
 
-    truck_custs = [(cust for cust in route) for route in truck_routes]
-
+    truck_custs = [cust for route in truck_routes for cust in route]
+    depot = 0
+    truck_custs.append(depot)
     # split sequence of drone customers into trips
     # and determine launching node and landing node
     drone_trips = [[]]
@@ -362,7 +356,6 @@ def decode(individual: Individual, problem: Problem):
                 )
 
                 rem_truck_custs = [cust for cust in truck_custs if cust != lch_cust]
-
                 pred_ld_cust = min(
                     rem_truck_custs,
                     key=lambda truck_cust: problem.distance_matrix_drone[drone_cust][
