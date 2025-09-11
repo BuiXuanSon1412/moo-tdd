@@ -1,6 +1,6 @@
 from population import Individual
 from copy import deepcopy
-from problem import Drone_Trip, Problem, Customer
+from problem import Drone_Trip, Problem, Customer, Truck_Solution
 
 
 """
@@ -120,9 +120,9 @@ def repair(individual: Individual, problem: Problem):
                 rem_truck_custs,
                 key=lambda truck_cust: problem.distance_matrix_drone[truck_cust][cust],
             )
-            # drone_trip = Drone_Trip([lch_cust, cust, ld_cust])
-            # if not problem.check_drone_energy([lch_cust, cust, ld_cust]):
-            #    chromosome[1][chro_id] = 0
+            drone_trip = Drone_Trip([lch_cust, cust, ld_cust], [0, problem.customer_list[cust].quantity, 0], [], [])
+            if not problem.check_energy_drone([lch_cust, cust, ld_cust]):
+                chromosome[1][chro_id] = 0
 
     # repair truck_routes:
     #   ensure all routes are feasible for truck capacity
@@ -254,22 +254,26 @@ def decode(individual: Individual, problem: Problem):
     # current identifier of current truck and drone in the specified route
     truck_route_idx = [0 for _ in range(len(problem.number_of_trucks))]  # (route_idx)
 
-    # update these lists
+    # update these lists for solution
     truck_arrival = [[0] * len(truck_route) for truck_route in truck_routes]
     truck_depart = deepcopy(truck_arrival)
 
     drone_arrival = [[[0] * len(trip) for trip in trips] for trips in drone_triplists]
     drone_depart = deepcopy(drone_arrival)
 
+    # the arrival time from each customer
     assemble = [0 for _ in range(len(problem.customer_list) + 1)]
 
+    # count of landing drones on each customer
     pickup_count = [0 for _ in range(len(problem.customer_list) + 1)]
     for trips in drone_triplists:
         for trip in trips:
             if trip[-1] != return_depot:
                 pickup_count[trip[-1]] = pickup_count[trip[-1]] + 1
 
+    # whether the customer has been departed
     departed = [False for _ in range(len(problem.customer_list) + 2)]
+    # whether the customer has been arrived
     arrived = [False for _ in range(len(problem.customer_list) + 2)]
     arrived[0] = True
 
@@ -282,21 +286,31 @@ def decode(individual: Individual, problem: Problem):
     ):
         # let each truck reaches the nearest landing customer on its route
         for truck_id in range(problem.number_of_trucks):
-            truck_route = truck_routes[truck_id]  # route of current truck
-            route_idx = truck_route_idx[truck_id]
+            truck_route = truck_routes[truck_id]    # route of current truck
+            route_idx = truck_route_idx[truck_id]   # current index in the current truck route
+            # terminated when the current index is the last index of the current truck route
             while route_idx < len(truck_route) - 1:
+                # current customer and next customer in the current truck route
                 cur_cust = truck_route[route_idx]
                 next_cust = truck_route[route_idx + 1]
 
+                # truck arrival time of the next customer based on the departture time of the current customer
                 truck_arrival[truck_id][route_idx + 1] = (
-                    truck_depart[truck_id][route_idx]
+                    truck_depart[truck_id][route_idx]           # maybe departure time from 'depot' must be initially calculated
                     + time_by_truck[cur_cust][next_cust]
                 )
+                
+                # update the assembling time of all vehicle(s) at the next customer 
+                assemble[next_cust] = truck_arrival[truck_id][route_idx + 1],
+                
                 arrived[next_cust] = True
 
+                # terminated when the next customer is a landing customer or return depot
+                # can not calculate the departure time of the next customer without arrival time of landing drones 
                 if next_cust in ld_custs or next_cust == return_depot:
                     break
 
+                # truck departure time of the next customer based on its arrival time and service time
                 truck_depart[truck_id][route_idx + 1] = (
                     max(
                         truck_arrival[truck_id][route_idx + 1],
@@ -304,22 +318,24 @@ def decode(individual: Individual, problem: Problem):
                     )
                     + problem.customer_list[next_cust].service
                 )
-                assemble[next_cust] = (
-                    truck_arrival[truck_id][route_idx + 1],
-                    truck_depart[truck_id][route_idx],
-                )
+                
                 departed[next_cust] = True
                 route_idx = route_idx + 1
 
-            truck_route_idx[truck_id] = route_idx
+            # remain the current departure-unscpecified customer index
+            # could be return depot or a landing customer
+            truck_route_idx[truck_id] = route_idx + 1 if route_idx < len(truck_route) - 1 else route_idx
 
+        # let drones move that depart from arrived customers to arrived customer but departed yet 
         for drone_id in range(problem.number_of_drones):
             trips = drone_triplists[drone_id]
 
             for trip_idx in range(len(trips)):
                 cur_trip = trips[trip_idx]
+                # condition to let the drone trip depart
                 if arrived[cur_trip[0]] and (
-                    not departed[cur_trip[-1]] or cur_trip[-1] == return_depot
+                    (not departed[cur_trip[-1]] and arrived[cur_trip[-1]])
+                    or cur_trip[-1] == return_depot
                 ):
                     for i in range(len(cur_trip)):
                         if i == 0:
@@ -328,6 +344,7 @@ def decode(individual: Individual, problem: Problem):
                                 drone_id
                             ][trip_idx][i]
                         else:
+                            # drone arrival time of the current customer based on the departure time of the previous customer
                             drone_arrival[drone_id][trip_idx][i] = (
                                 drone_depart[drone_id][trip_idx][i - 1]
                                 + time_by_drone[cur_trip[i - 1]][cur_trip[i]]
@@ -336,7 +353,8 @@ def decode(individual: Individual, problem: Problem):
 
                             if i == len(cur_trip) - 1:
                                 break
-
+                            
+                            # drone departure time of the current customer based on max(its arrival time, customer's arrival time) and service time
                             drone_depart[drone_id][trip_idx][i] = (
                                 max(
                                     drone_arrival[drone_id][trip_idx][i],
@@ -345,11 +363,16 @@ def decode(individual: Individual, problem: Problem):
                                 + problem.customer_list[cur_trip[i]].service
                             )
                             departed[cur_trip[i]] = True
+                    
+                    # reduce the number of drones assembled at the landing customer by 1
                     pickup_count[cur_trip[-1]] = pickup_count[cur_trip[-1]] - 1
+                    # update the assembling time of the landing customer
+                    
                     assemble[cur_trip[-1]] = max(
                         assemble[cur_trip[-1]], drone_arrival[drone_id][trip_idx][-1]
                     )
 
+        # specify the departure time of trucks at their current landing customers when all drones landing on this customer have arrived
         for truck_id in range(len(problem.number_of_trucks)):
             truck_route = truck_routes[truck_id]
             cur_cust = truck_route[truck_route_idx]
@@ -362,11 +385,37 @@ def decode(individual: Individual, problem: Problem):
                 truck_route_idx[truck_id] = truck_route_idx[truck_id] + 1
                 departed[cur_cust] = True
 
-    return (
-        truck_routes,
-        drone_triplists,
-        truck_arrival,
-        truck_depart,
-        drone_arrival,
-        drone_depart,
-    )
+    truck_sols = []
+    for truck_id in range(problem.number_of_trucks):
+        assigned_customers = truck_routes[truck_id][1:-1]
+        recived_truck = [problem.customer_list[cust].quantity for cust in assigned_customers]
+        recived_drone = []
+        for cust in assigned_customers:
+            if cust in ld_custs:
+                recived_drone.append(problem.customer_list[cust].quantity)
+            else:
+                recived_drone.append(0)
+        
+        arrive_time = truck_arrival[truck_id][1:-1]
+        depart_time = truck_depart[truck_id][1:-1]  
+        truck_sols.append(Truck_Solution(assigned_customers, recived_truck, recived_drone, arrive_time, depart_time))
+
+    drone_sols = []                
+    for drone_id in range(problem.number_of_drones):
+        trips = drone_triplists[drone_id]
+        drone_sol = []
+        for trip_idx in range(len(trips)):
+            cur_trip = trips[trip_idx]
+            assigned_customers = deepcopy(cur_trip)
+            if len(assigned_customers) == 0:
+                continue
+            recived_drone = [0 for _ in range(len(assigned_customers))]
+            recived_drone[1:-1] = [problem.customer_list[cust].quantity for cust in assigned_customers[1:-1]]
+            arrive_time = deepcopy(drone_arrival[drone_id][trip_idx])
+            depart_time = deepcopy(drone_depart[drone_id][trip_idx])
+            drone_trip = Drone_Trip(assigned_customers, recived_drone, arrive_time, depart_time)
+            drone_sol.append(drone_trip)
+        drone_sols.append(drone_sol)
+    
+
+    return truck_sols, drone_sols
