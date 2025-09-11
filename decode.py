@@ -1,217 +1,6 @@
 from population import Individual
 from copy import deepcopy
-
-
-class Customer:
-    def __init__(self, arrive_time, quantity, service_time, x, y):
-        self.arrive_time = arrive_time
-        self.quantity = quantity
-        self.service = service_time
-        self.x = x
-        self.y = y
-
-
-class Truck_Solution:
-    def __init__(
-        self, assigned_customers, recived_truck, recived_drone, arrive_time, leave_time
-    ):
-        self.assigned_customers = assigned_customers
-        self.recived_truck = recived_truck
-        self.recived_drone = recived_drone
-        self.arrive_time = arrive_time
-        self.leave_time = leave_time
-
-
-class Drone_Trip:
-    def __init__(self, assigned_customers, recived_drone, arrive_time, leave_time):
-        self.assigned_customers = assigned_customers
-        self.recived_drone = recived_drone
-        self.arrive_time = arrive_time
-        self.leave_time = leave_time
-
-
-class Drone_Solution:
-    def __init__(self, num_of_trips, trip_list):
-        self.num_of_trips = num_of_trips
-        self.trip_list = trip_list
-
-
-class Problem:
-    def __init__(
-        self,
-        customer_list: list[Customer],
-        number_of_trucks,
-        number_of_drones,
-        distance_matrix_truck,
-        distance_matrix_drone,
-        truck_capacity,
-        drone_capacity,
-        drone_energy,
-        speed_of_truck,
-        speed_of_drone,
-        launch_time,
-        land_time,
-        energy_consumption_rate,
-        weight_of_drone,
-    ):
-        self.customer_list = customer_list
-        self.number_of_trucks = number_of_trucks
-        self.number_of_drones = number_of_drones
-        self.distance_matrix_truck = distance_matrix_truck
-        self.distance_matrix_drone = distance_matrix_drone
-        self.truck_capacity = truck_capacity
-        self.drone_capacity = drone_capacity
-        self.drone_energy = drone_energy
-        self.speed_of_truck = speed_of_truck
-        self.speed_of_drone = speed_of_drone
-        self.launch_time = launch_time
-        self.land_time = land_time
-        self.energy_consumption_rate = energy_consumption_rate
-        self.weight_of_drone = weight_of_drone
-
-    def check_truck_capacity(self, route):
-        total = 0
-        for customer in route:
-            total = total + customer[1]
-        if total <= self.truck_capacity:
-            return True
-        else:
-            return False
-
-    def check_drone_capacity(self, route):
-        total = 0
-        for customer in route:
-            total = total + customer[1]
-        if total <= self.drone_capacity:
-            return True
-        else:
-            return False
-
-    def cal_truck_route_time(self, route):
-        total_time = 0
-        if len(route) == 0:
-            return 0
-        total_time = (
-            total_time
-            + self.distance_matrix_truck[0][route[0][0]] / self.speed_of_truck
-            + self.customer_list[route[0][0]].service
-        )
-        for i in range(len(route) - 1):
-            total_time = (
-                total_time
-                + self.distance_matrix_truck[route[i][0]][route[i + 1][0]]
-                / self.speed_of_truck
-                + self.customer_list[route[i + 1][0]].service
-            )
-        total_time = (
-            total_time
-            + self.distance_matrix_truck[route[-1][0]][0] / self.speed_of_truck
-        )
-        return total_time
-
-    def check_drone_energy_constraint(self, route):
-        pass
-
-    def check_truck_time_constraint(self, route):
-        pass
-
-    def cal_drone_route_time(self, route):
-        pass
-
-    """
-    def check_truck_time_constraint(self, route):
-        total_time = self.cal_truck_route_time(route)
-        if total_time <= self.:
-            return True
-        else:
-            return False
-
-    def cal_drone_route_time(self, route):
-        total_time = 0
-        if len(route) == 0:
-            return 0
-        total_time = (
-            total_time
-            + self.tau_l
-            + self.tilde_d[0][route[0][0]] / self.tilde_v
-            + self.tau_r
-            + self.customer_list[route[0][0]].t
-        )
-        for i in range(len(route) - 1):
-            total_time = (
-                total_time
-                + self.tau_l
-                + self.tilde_d[route[i][0]][route[i + 1][0]] / self.tilde_v
-                + self.tau_r
-                + self.customer_list[route[i + 1][0]].t
-            )
-        total_time = (
-            total_time
-            + self.tau_l
-            + self.tilde_d[route[-1][0]][0] / self.tilde_v
-            + self.tau_r
-        )
-        return total_time
-
-    def check_drone_time_constraint(self, multi_route):
-        total_time = 0
-        for route in multi_route:
-            total_time = total_time + self.cal_drone_route_time(route)
-        if total_time <= self.T:
-            return True
-        else:
-            return False
-
-    def cal_drone_route_energy(self, route):
-        total_energy = 0
-        if len(route) == 0:
-            return 0
-        total_demand = 0
-        for customer in route:
-            total_demand = total_demand + customer[1]
-
-        total_energy = (
-            total_energy
-            + self.lbda
-            * (self.tilde_qo + total_demand)
-            * self.tilde_d[0][route[0][0]]
-            / self.tilde_v
-        )
-        total_demand = total_demand - route[0][1]
-        total_energy = (
-            total_energy + self.lbda * total_demand * self.customer_list[route[0][0]].t
-        )
-        for i in range(len(route) - 1):
-            total_energy = (
-                total_energy
-                + self.lbda
-                * (self.tilde_qo + total_demand)
-                * self.tilde_d[route[i][0]][route[i + 1][0]]
-                / self.tilde_v
-            )
-            total_demand = total_demand - route[i + 1][1]
-            total_energy = (
-                total_energy
-                + self.lbda * total_demand * self.customer_list[route[i + 1][0]].t
-            )
-
-        total_energy = (
-            total_energy
-            + self.lbda
-            * (self.tilde_qo + total_demand)
-            * self.tilde_d[route[-1][0]][0]
-            / self.tilde_v
-        )
-        return total_energy
-
-    def check_drone_energy_constraint(self, route):
-        total_energy = self.cal_drone_route_energy(route)
-        if total_energy <= self.E:
-            return True
-        else:
-            return False
-
-    """
+from problem import Drone_Trip, Problem, Customer
 
 
 """
@@ -315,7 +104,10 @@ def repair(individual: Individual, problem: Problem):
     for drone_route in drone_routes:
         for chro_id, cust in drone_route:
             # violate capacity constraints
-            if not problem.check_drone_capacity([cust]):
+            drone_trip = Drone_Trip(
+                [None, cust, None], [0, problem.customer_list[cust].quantity, 0], [], []
+            )
+            if not problem.check_capacity_drone_trip_constraint(drone_trip):
                 chromosome[1][chro_id] = 0  # 0 for truck   1 for drone
 
             # violate energy constraints
@@ -328,8 +120,9 @@ def repair(individual: Individual, problem: Problem):
                 rem_truck_custs,
                 key=lambda truck_cust: problem.distance_matrix_drone[truck_cust][cust],
             )
-            if not problem.check_drone_energy_constraint([lch_cust, cust, ld_cust]):
-                chromosome[1][chro_id] = 0
+            # drone_trip = Drone_Trip([lch_cust, cust, ld_cust])
+            # if not problem.check_drone_energy([lch_cust, cust, ld_cust]):
+            #    chromosome[1][chro_id] = 0
 
     # repair truck_routes:
     #   ensure all routes are feasible for truck capacity
@@ -345,7 +138,7 @@ def split_drone_routes(truck_routes, drone_routes, problem):
     depot = 0
     truck_custs.append(depot)
 
-    drone_tripsets = [[]]
+    drone_triplists = [[]]
 
     for drone_id, drone_route in enumerate(drone_routes):
         # split current drone's customers sequence into feasible trips
@@ -406,13 +199,13 @@ def split_drone_routes(truck_routes, drone_routes, problem):
                         ],
                     )
                     trip.append(ld_cust)  # append landing customer into current trip
-                    drone_tripsets[drone_id].append(
+                    drone_triplists[drone_id].append(
                         trip
                     )  # append current trip into list of the current drone's trips
                     rem_truck_custs = deepcopy(truck_custs)
                     trip.clear()  # empty the temporary trip to continue retrieval
 
-    return drone_tripsets
+    return drone_triplists
 
 
 # the individual can be decoded only when it is feasible
@@ -420,7 +213,7 @@ def decode(individual: Individual, problem: Problem):
     chromosome = individual.chromosome
     # extract sequences of customers for truck and drone
     truck_routes, drone_routes = extract_routes(chromosome, problem)
-    drone_tripsets = split_drone_routes(truck_routes, drone_routes, problem)
+    drone_triplists = split_drone_routes(truck_routes, drone_routes, problem)
 
     """
     to decode complete solution, compute the schedule
@@ -433,7 +226,7 @@ def decode(individual: Individual, problem: Problem):
     ]
 
     # rebuild drone trips by adjusting return depot annotation to 'return depot'
-    for trips in drone_tripsets:
+    for trips in drone_triplists:
         for i in range(len(trips)):
             if trips[i][-1] == 0 and len(trips[i]) > 0:
                 trips[i][-1] = return_depot
@@ -453,7 +246,7 @@ def decode(individual: Individual, problem: Problem):
     # set of launching customers and landing customers
     ld_custs = [
         trip[-1]
-        for trips in drone_tripsets
+        for trips in drone_triplists
         for trip in trips
         if trip[-1] != return_depot
     ]
@@ -465,13 +258,13 @@ def decode(individual: Individual, problem: Problem):
     truck_arrival = [[0] * len(truck_route) for truck_route in truck_routes]
     truck_depart = deepcopy(truck_arrival)
 
-    drone_arrival = [[[0] * len(trip) for trip in trips] for trips in drone_tripsets]
+    drone_arrival = [[[0] * len(trip) for trip in trips] for trips in drone_triplists]
     drone_depart = deepcopy(drone_arrival)
 
     assemble = [0 for _ in range(len(problem.customer_list) + 1)]
 
     pickup_count = [0 for _ in range(len(problem.customer_list) + 1)]
-    for trips in drone_tripsets:
+    for trips in drone_triplists:
         for trip in trips:
             if trip[-1] != return_depot:
                 pickup_count[trip[-1]] = pickup_count[trip[-1]] + 1
@@ -480,6 +273,7 @@ def decode(individual: Individual, problem: Problem):
     arrived = [False for _ in range(len(problem.customer_list) + 2)]
     arrived[0] = True
 
+    # the iteration will be ended when all the trucks return to depot
     while not all(
         [
             truck_route[truck_route_idx[truck_id]] == return_depot
@@ -504,11 +298,10 @@ def decode(individual: Individual, problem: Problem):
                     break
 
                 truck_depart[truck_id][route_idx + 1] = (
-                    truck_arrival[truck_id][route_idx + 1]
-                    + problem.customer_list[next_cust].service
-                    if truck_arrival[truck_id][route_idx + 1]
-                    >= problem.customer_list[next_cust].arrive_time
-                    else problem.customer_list[next_cust].arrive_time
+                    max(
+                        truck_arrival[truck_id][route_idx + 1],
+                        problem.customer_list[next_cust].arrive_time,
+                    )
                     + problem.customer_list[next_cust].service
                 )
                 assemble[next_cust] = (
@@ -518,10 +311,10 @@ def decode(individual: Individual, problem: Problem):
                 departed[next_cust] = True
                 route_idx = route_idx + 1
 
-            truck_route_idx[truck_id] = route_idx + 1
+            truck_route_idx[truck_id] = route_idx
 
         for drone_id in range(problem.number_of_drones):
-            trips = drone_tripsets[drone_id]
+            trips = drone_triplists[drone_id]
 
             for trip_idx in range(len(trips)):
                 cur_trip = trips[trip_idx]
@@ -571,7 +364,7 @@ def decode(individual: Individual, problem: Problem):
 
     return (
         truck_routes,
-        drone_tripsets,
+        drone_triplists,
         truck_arrival,
         truck_depart,
         drone_arrival,
