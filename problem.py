@@ -81,6 +81,15 @@ class Problem:
         self.fix_truck_cost = fix_truck_cost
         self.fix_drone_cost = fix_drone_cost
 
+    def check_capacity_truck_constraint(self, route):
+        total = 0
+        for cust in route:
+            total = total + self.customer_list[cust].quantity
+            if total > self.truck_capacity:
+                return False
+
+        return True
+
     def check_capacity_truck_contraint(self, truck_solution: Truck_Solution):
         customer_length = len(truck_solution.assigned_customers)
         if customer_length == 0:
