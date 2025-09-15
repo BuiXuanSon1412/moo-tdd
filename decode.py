@@ -1,4 +1,3 @@
-from _typeshed import TraceFunction
 from population import Individual
 from copy import deepcopy
 from problem import Drone_Trip, Problem, Truck_Solution
