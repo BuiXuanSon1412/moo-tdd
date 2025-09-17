@@ -543,7 +543,8 @@ def run_nsga_iii(processing_number, problem, indi_list, pop_size, max_gen, cross
     result = pool.starmap(cal_fitness, arg, chunksize=10)
 
     for individual, fitness in zip(nsga_iii_pop.indivs, result):
-        individual.objectives = fitness
+        individual.chromosome = fitness[0]
+        individual.objectives = fitness[1:]
     nsga_iii_pop.fast_nondominated_sort()
     pool.close()
 
@@ -565,7 +566,8 @@ def run_nsga_iii(processing_number, problem, indi_list, pop_size, max_gen, cross
 
         result = pool.starmap(cal_fitness, arg, chunksize=10)
         for individual, fitness in zip(offspring, result):
-            individual.objectives = fitness
+            individual.chromosome = fitness[0]
+            individual.objectives = fitness[1:]
         pool.close()
         # print("Tinh fitness xong")
         
@@ -578,9 +580,7 @@ def run_nsga_iii(processing_number, problem, indi_list, pop_size, max_gen, cross
             Pareto_store = []
             for indi in nsga_iii_pop.ParetoFront[0]:
                 Pareto_store.append(list(indi.objectives))
-            history[gen+1] = Pareto_store
-        
+            history[gen+1] = Pareto_store    
     pool.close()
-
-    print("NSGA-III Done: ", cal_hv_front(nsga_iii_pop.ParetoFront[0], np.array([1,1,10,10])))
+    print("NSGA-III Done: ", cal_hv_front(nsga_iii_pop.ParetoFront[0], np.array([10000,10000,1000])))
     return history

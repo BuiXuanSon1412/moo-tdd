@@ -88,7 +88,6 @@ class NSGAIIPopulation(Population):
 
 def run_nsga_ii(processing_number, problem, indi_list, pop_size, max_gen, crossover_operator, mutation_operator, 
                 crossover_rate, mutation_rate, cal_fitness):
-    print("NSGA-II")
     history = {}
     nsga_ii_pop = NSGAIIPopulation(pop_size)
     nsga_ii_pop.pre_indi_gen(indi_list)
@@ -99,13 +98,15 @@ def run_nsga_ii(processing_number, problem, indi_list, pop_size, max_gen, crosso
         arg.append((problem, individual))
     result = pool.starmap(cal_fitness, arg)
     for individual, fitness in zip(nsga_ii_pop.indivs, result):
-        individual.objectives = fitness
+        individual.chromosome = fitness[0]
+        individual.objectives = fitness[1:]
     nsga_ii_pop.natural_selection()
-    print("Generation 0: Done")
+    # print("Generation 0: Done")
     Pareto_store = []
     for indi in nsga_ii_pop.ParetoFront[0]:
         Pareto_store.append(list(indi.objectives))
     history[0] = Pareto_store
+    print("NSGA-II 0 Done: ")
 
 
     for gen in range(max_gen):
@@ -116,7 +117,8 @@ def run_nsga_ii(processing_number, problem, indi_list, pop_size, max_gen, crosso
             arg.append((problem, individual))
         result = pool.starmap(cal_fitness, arg)
         for individual, fitness in zip(offspring, result):
-            individual.objectives = fitness
+            individual.chromosome = fitness[0]
+            individual.objectives = fitness[1:]
         nsga_ii_pop.indivs.extend(offspring)
         nsga_ii_pop.natural_selection()
         print("Generation {}: Done".format(gen + 1))
@@ -124,7 +126,7 @@ def run_nsga_ii(processing_number, problem, indi_list, pop_size, max_gen, crosso
             Pareto_store.append(list(indi.objectives))
         history[gen + 1] = Pareto_store
     pool.close()
-    print("NSGA-II Done: ", cal_hv_front(nsga_ii_pop.ParetoFront[0], np.array([1, 1, 10, 10])))
+    print("NSGA-II Done: ", cal_hv_front(nsga_ii_pop.ParetoFront[0], np.array([10000, 10000, 1000])))
     return history
     
 
