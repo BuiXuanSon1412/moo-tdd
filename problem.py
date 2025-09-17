@@ -130,24 +130,13 @@ class Problem:
         total_energy = 0
         total_goods = 0
         for i in range(number_point - 1):
-            u, u_next = (
-                drone_trip.assigned_customers[i],
-                drone_trip.assigned_customers[i + 1],
-            )
-            total_energy = total_energy + self.energy_consumption_rate * (
-                self.weight_of_drone + total_goods
-            ) * (
-                self.distance_matrix_drone[u][u_next] / self.speed_of_drone
-                + self.launch_time
-            )
-            if drone_trip.recived_drone[i] != 0:
-                wait_time = max(
-                    self.customer_list[u_next].arrive_time - drone_trip.arrive_time[i],
-                    0,
-                )
-                total_energy = total_energy + self.energy_consumption_rate * (
-                    self.weight_of_drone + total_goods
-                ) * (self.land_time + wait_time)
+            u, u_next = drone_trip.assigned_customers[i], drone_trip.assigned_customers[i+1]
+            total_energy = total_energy + self.energy_consumption_rate*(self.weight_of_drone + total_goods)*(self.distance_matrix_drone[u][u_next]/self.speed_of_drone + self.launch_time)
+            # print("i = ", i)
+            if drone_trip.recived_drone[i+1] != 0:
+                wait_time = max(self.customer_list[u_next].arrive_time - drone_trip.arrive_time[i+1], 0)
+                # print("wait_time: ", wait_time)
+                total_energy = total_energy + self.energy_consumption_rate*(self.weight_of_drone + total_goods)*(self.land_time + wait_time)
                 total_goods = total_goods + drone_trip.recived_drone[i]
                 total_energy = (
                     total_energy
@@ -156,15 +145,10 @@ class Problem:
                     * self.customer_list[u_next].service_time
                 )
             else:
-                wait_time = max(
-                    0, drone_trip.leave_time[i + 1] - drone_trip.arrive_time[i + 1]
-                )
-                total_energy = (
-                    total_energy
-                    + self.energy_consumption_rate
-                    * (self.weight_of_drone + total_goods)
-                    * wait_time
-                )
+                wait_time = max(0, drone_trip.leave_time[i+1] - drone_trip.arrive_time[i+1])
+                # print("wait_time 2:", wait_time)
+                total_energy = total_energy + self.energy_consumption_rate*(self.weight_of_drone + total_goods)*wait_time
+        # print("total_energy", total_energy, self.drone_energy)
         if total_energy > self.drone_energy:
             return False
         else:
