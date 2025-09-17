@@ -29,19 +29,15 @@ relaxed version of repair without full solution
 
 
 def relaxed_repair(chromosome, problem: Problem):
-    # compute matrix of travelling time between 2 specific customers of truck and drone
+    # compute matrix of travelling time between 2 specific customers of truck and drone  
     time_by_truck = [
-        problem.distance_matrix_truck[i][j] / problem.speed_of_truck
-        for i in range(len(problem.distance_matrix_truck))
-        for j in range(len(problem.distance_matrix_truck[0]))
+        [dist / problem.speed_of_truck for dist in row] for row in problem.distance_matrix_truck            
     ]
     time_by_drone = [
-        (problem.launch_time + problem.land_time + problem.distance_matrix_drone[i][j])
-        / problem.speed_of_drone
-        for i in range(len(problem.distance_matrix_drone))
-        for j in range(len(problem.distance_matrix_drone[0]))
+        [ (problem.launch_time + problem.land_time + dist) / problem.speed_of_drone for dist in row] for row in problem.distance_matrix_drone
     ]
-
+    
+    
     truck_routes = []
     drone_routes = []
     drone_triplists = []
@@ -52,7 +48,7 @@ def relaxed_repair(chromosome, problem: Problem):
         tmp_truck_route = []
         tmp_drone_route = []
 
-        k = len(problem.customer_list) + 1
+        k = len(problem.customer_list)
         d = len(problem.customer_list) + problem.number_of_trucks
 
         cur_truck_part = k
@@ -75,60 +71,74 @@ def relaxed_repair(chromosome, problem: Problem):
             # append customer into current route
             if chromosome[1][i] == 0:  # truck customer
                 if problem.check_capacity_truck_constraint(
-                    tmp_drone_route + [chromosome[0][i]]
+                    tmp_truck_route + [chromosome[0][i]]
                 ):  # if not violate truck capacity
                     tmp_truck_route.append(chromosome[0][i])
                 else:
                     # if violate truck capacity, insert current partition into this position
-                    chromosome[0].remove(cur_truck_part)
-                    chromosome[0].insert(i + 1, cur_truck_part)
-                    chromosome[1].insert(i + 1, 0)
-            elif chromosome[1][i] == 1:
+                    idx = chromosome[0].index(cur_truck_part)
+                    chromosome[0].pop(idx)
+                    chromosome[1].pop(idx)
+                    chromosome[0].insert(i, cur_truck_part)
+                    chromosome[1].insert(i, 0)
+            elif chromosome[1][i] == 1: # drone customer
                 if (
                     problem.customer_list[chromosome[0][i]].quantity
                     <= problem.drone_capacity
-                ):
+                ):  # if not violate drone capacity
                     tmp_drone_route.append(chromosome[0][i])
-                else:
+                else:  # if violate drone capacity, change it to truck customer
                     chromosome[1][i] = 0
                     if problem.check_capacity_truck_constraint(
-                        tmp_drone_route + [chromosome[0][i]]
+                        tmp_truck_route + [chromosome[0][i]]
                     ):
                         tmp_truck_route.append(chromosome[0][i])
                     else:
                         idx = chromosome[0].index(cur_truck_part)
                         chromosome[0].pop(idx)
                         chromosome[1].pop(idx)
-                        chromosome[0].insert(i + 1, cur_truck_part)
-                        chromosome[1].insert(i + 1, 0)
+                        chromosome[0].insert(i, cur_truck_part)
+                        chromosome[1].insert(i, 0)
 
         truck_routes.append(tmp_truck_route)
         drone_routes.append(tmp_drone_route)
-        print("Capacity-feasible truck routes :", truck_routes)
+        print("Chromosome layer 1:", chromosome[0])
+        print("Chromosome layer 2:", chromosome[1])
+        print("Truck routes :", truck_routes)
         print("Drone routes:", drone_routes)
-
+        if all(problem.check_capacity_truck_constraint(route) for route in truck_routes):
+            print("Truck capacity constraint satisfied")
+        else:
+            print("Truck capacity constraint violated")
+        
+        if all(problem.customer_list[cust].quantity <= problem.drone_capacity for route in drone_routes for cust in route):
+            print("Drone capacity constraint satisfied")
+        else:
+            print("Drone capacity constraint violated")
+            
         # route-trip extraction from chromosome will be ended when all customers will be delivered by trucks
         # also all these customers are well distributed to do not violated capacity constraint of truck
         if all(
-            chromosome[0][i] < k and chromosome[1][i] == 0
+            chromosome[0][i] >= k or chromosome[1][i] == 0
             for i in range(len(chromosome[1]))
         ):
             return truck_routes, drone_triplists
         # mapping customers to their indices in chromosome
         mp_cust_chro = [-1 for _ in range(len(problem.customer_list) + 1)]
         for i in range(len(chromosome[0])):
-            if chromosome[0][i] <= problem.customer_list:
+            if chromosome[0][i] <= len(problem.customer_list):
                 mp_cust_chro[chromosome[0][i]] = i
         """
         split drone routes into list of trips for each drone
         """
+        
         # set of truck customers
         truck_custs = [cust for route in truck_routes for cust in route]
         depot = 0
         truck_custs.append(depot)
 
         # estimate timeline of truck schedule
-        time_interval = [(0, 0) for _ in range(len(problem.customer_list) + 1)]
+        time_interval = [[0, 0] for _ in range(len(problem.customer_list) + 1)]
         for truck_route in truck_routes:
             for cust_idx in range(len(truck_route)):
                 cust = truck_route[cust_idx]
@@ -152,23 +162,52 @@ def relaxed_repair(chromosome, problem: Problem):
                         + problem.customer_list[cust].service_time
                     )
 
+        truck_direction = []
+        for truck_route in truck_routes:
+            direction = [-1 for _ in range(len(problem.customer_list) + 1)]
+            for idx in range(len(truck_route) - 1):
+                direction[truck_route[idx]] = truck_route[idx + 1]
+            truck_direction.append(direction)
+            
+ 
         # split drone routes into the list of trips for each drone
-        drone_triplists.clear()
+        drone_triplists = []
         drone_violated = False
         for drone_route in drone_routes:
             triplist = []
             # drone_route.sort(key=lambda cust: problem.customer_list[cust].service_time)
             for drone_cust in drone_route:
                 arrival = problem.customer_list[drone_cust].arrive_time
-
+                depart = arrival + problem.customer_list[drone_cust].service_time
+                for i in range(len(truck_custs) - 1):
+                    lch_cust = truck_custs[i]
+                    wst_lch_time = time_interval[lch_cust][0]
+                    for j in range(i+1, len(truck_custs)):
+                        ld_cust = truck_custs[j]
+                        arrival = wst_lch_time + time_by_drone[lch_cust][drone_cust]
+                        service_waiting = max(0, problem.customer_list[drone_cust].arrive_time - arrival)
+                        depart = arrival + service_waiting + problem.customer_list[drone_cust].service_time
+                        drone_trip = Drone_Trip(
+                            [lch_cust, drone_cust, ld_cust],
+                            [0, problem.customer_list[drone_cust].quantity, 0],
+                            [
+                                time_interval[lch_cust][0],
+                                arrival,
+                                depart + time_by_drone[drone_cust][ld_cust],
+                            ],
+                            [
+                                arrival - time_by_drone[lch_cust][drone_cust],
+                                depart,
+                                time_interval[ld_cust][1],
+                            ],
+                        )
+                '''
                 # find set of launching customers
                 lch_truck_custs = [
                     truck_cust
                     for truck_cust in truck_custs
-                    if (arrival - time_by_drone[truck_cust][drone_cust])
-                    in range(time_interval[truck_cust][0], time_interval[truck_cust][1])
+                    if time_interval[truck_cust][0] <= (arrival - time_by_drone[truck_cust][drone_cust])
                 ]
-
                 # get the closest one to save energy
                 lch_cust = min(
                     lch_truck_custs,
@@ -177,14 +216,12 @@ def relaxed_repair(chromosome, problem: Problem):
                     ],
                     default=None,
                 )
-
                 depart = arrival + problem.customer_list[drone_cust].service_time
 
                 ld_truck_custs = [
                     truck_cust
                     for truck_cust in truck_custs
-                    if (depart + time_by_drone[drone_cust][truck_cust])
-                    in range(time_interval[truck_cust][0], time_interval[truck_cust][1])
+                    if time_interval[truck_cust][0] <= (depart + time_by_drone[drone_cust][truck_cust])
                 ]
                 ld_cust = min(
                     ld_truck_custs,
@@ -193,6 +230,7 @@ def relaxed_repair(chromosome, problem: Problem):
                     ],
                     default=None,
                 )
+                
                 # the current drone customer can be determined its launching node and landing node
                 if lch_cust and ld_cust:
                     if problem.check_energy_drone(
@@ -212,13 +250,17 @@ def relaxed_repair(chromosome, problem: Problem):
                         )
                     ):
                         triplist.append([lch_cust, drone_cust, ld_cust])
+                
                 else:
                     chromosome[1][mp_cust_chro[drone_cust]] = 0
                     drone_violated = True
                     break
+                '''
             if drone_violated:
                 break
-
+            drone_triplists.append(triplist)
+        if not drone_violated:
+            return truck_routes, drone_triplists
 
 """
 to decode complete solution, compute the schedule
@@ -230,7 +272,7 @@ def schedule(chromosome, truck_routes, drone_triplists, problem: Problem):
     # mapping customers to their indices in chromosome
     mp_cust_chro = [-1 for _ in range(len(problem.customer_list) + 1)]
     for i in range(len(chromosome[0])):
-        if chromosome[0][i] <= problem.customer_list:
+        if chromosome[0][i] <= len(problem.customer_list):
             mp_cust_chro[chromosome[0][i]] = i
 
     depart_depot = 0
@@ -267,7 +309,7 @@ def schedule(chromosome, truck_routes, drone_triplists, problem: Problem):
     ]
 
     # current identifier of current truck and drone in the specified route
-    truck_route_idx = [0 for _ in range(len(problem.number_of_trucks))]  # (route_idx)
+    truck_route_idx = [0 for _ in range(problem.number_of_trucks)]  # (route_idx)
 
     # update these lists for solution
     truck_arrival = [[0] * len(truck_route) for truck_route in truck_routes]
@@ -414,7 +456,7 @@ def schedule(chromosome, truck_routes, drone_triplists, problem: Problem):
                 )
                 truck_route_idx[truck_id] = truck_route_idx[truck_id] + 1
                 departed[cur_cust] = True
-
+            print(truck_route_idx[truck_id])
     # build the solution in required format
     truck_sols = []
     for truck_id in range(problem.number_of_trucks):
@@ -475,6 +517,9 @@ def decode(individual: Individual, problem: Problem):
             return None
         truck_routes, drone_triplists = relaxed_repair(chromosome, problem)
 
+        print(truck_routes)
+        print(drone_triplists)
+        
         truck_sols, drone_sols = schedule(
             chromosome, truck_routes, drone_triplists, problem
         )
