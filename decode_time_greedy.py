@@ -61,6 +61,44 @@ def update_chromosome(truck_routes, drone_routes, problem: Problem):
 
     return [list_nodes, list_mode]
 
+# def repair_capacity(chromosome, problem: Problem):
+#     for i in range(len(chromosome[0])):
+#         if chromosome[1][i] == 1 and chromosome[0][i] <= problem.number_customer:
+#             if problem.customer_list[chromosome[0][i]].quantity > problem.drone_capacity:
+#                 chromosome[1][i] = 0
+
+#     truck_routes, drone_routes = extract_routes(chromosome, problem)
+#     def route_load(route):
+#         return sum(problem.customer_list[cust].quantity for cust in route)
+    
+#     while True:
+#         loads = [route_load(route) for route in truck_routes]
+#         max_load = max(loads)
+#         min_load = min(loads)
+#         max_idx = loads.index(max_load)
+#         min_idx = loads.index(min_load)
+
+#         if all(load <= problem.truck_capacity for load in loads):
+#             break
+
+#         if max_load > problem.truck_capacity:
+#             max_cust = max(
+#                 truck_routes[max_idx],
+#                 key=lambda c: problem.customer_list[c].quantity
+#             )
+#             truck_routes[max_idx].remove(max_cust)
+#             truck_routes[min_idx].append(max_cust)
+#         else:
+#             break
+#     loads = [route_load(route) for route in truck_routes]
+#     if all(load <= problem.truck_capacity for load in loads):
+#         return False
+
+#     # B4: Encode lại chromosome
+#     chromosome = update_chromosome(truck_routes, drone_routes, problem)
+#     truck_routes, drone_routes = extract_routes(chromosome, problem)
+#     return chromosome
+
 def repair_capacity(chromosome, problem: Problem):
     for i in range(len(chromosome[0])):
         if chromosome[1][i] == 1 and chromosome[0][i] <= problem.number_customer:
@@ -70,7 +108,11 @@ def repair_capacity(chromosome, problem: Problem):
     truck_routes, drone_routes = extract_routes(chromosome, problem)
     def route_load(route):
         return sum(problem.customer_list[cust].quantity for cust in route)
+    i = 0
     while True:
+        if i > 1000:
+            return False
+        i = i+1
         loads = [route_load(route) for route in truck_routes]
         max_load = max(loads)
         min_load = min(loads)

@@ -224,7 +224,7 @@ class Problem:
                         )
 
         for drone_solution in drone_solution_list:
-            for drone_trip in drone_solution:
+            for drone_trip in drone_solution.trip_list:
                 num_point = len(drone_trip.assigned_customers)
                 if num_point == 0:
                     continue
@@ -252,7 +252,7 @@ class Problem:
                 + self.distance_matrix_truck[0][truck_solution.assigned_customers[0]]
                 + self.distance_matrix_truck[truck_solution.assigned_customers[-1]][0]
             )
-            for i in range(num_point):
+            for i in range(num_point -1):
                 u, u_next = (
                     truck_solution.assigned_customers[i],
                     truck_solution.assigned_customers[i + 1],
@@ -264,5 +264,5 @@ class Problem:
         num_truck = len(truck_soltuon_list)
         distance_list = np.zeros(num_truck)
         for i in range(num_truck):
-            distance_list = self.cal_distance_truck(truck_soltuon_list[i])
+            distance_list[i] = self.cal_distance_truck(truck_soltuon_list[i])
         return np.std(distance_list)
