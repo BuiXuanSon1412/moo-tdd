@@ -15,8 +15,8 @@ if __name__ == "__main__":
     processing_number = 8
     # from utils import crossover_PMX, mutation_flip, init_random
     pro_drone = 0.7
-    pop_size = 10
-    max_gen = 10
+    pop_size = 100
+    max_gen = 100
     crossover_rate = 0.8
     mutation_rate = 0.7
     indi_list = []
@@ -25,7 +25,7 @@ if __name__ == "__main__":
         indi_list.append(indi)
     result_nsga_ii = run_nsga_ii(processing_number, problem, indi_list, pop_size, max_gen, crossover_PMX, mutation_flip, crossover_rate, mutation_rate, cal_fitness)
     
-    GK = 3
+    GK = 5
     sigma = 0.1
 
     result_pfgmoea = run_pfgmoea(processing_number, problem, indi_list, pop_size, max_gen, GK, sigma, crossover_PMX, mutation_flip, 
@@ -151,3 +151,5 @@ if __name__ == "__main__":
 
             
             
+# result/100customers/NSGAII(MOEAD/NSGAIII, PFGMOEA)
+# ví dụ: result/100customers/NSGAII/c100.json
