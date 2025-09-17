@@ -2,8 +2,8 @@ import random
 from population import Individual
 def pmx_crossover(parent1, parent2):
     # Extract layers
-    p1_layer1, p1_layer2 = parent1.chromosome
-    p2_layer1, p2_layer2 = parent2.chromosome
+    p1_layer1, p1_layer2 = parent1.chromosome[0], parent1.chromosome[1]
+    p2_layer1, p2_layer2 = parent2.chromosome[0], parent2.chromosome[1]
 
     size = len(p1_layer1)
     # choose two crossover points
@@ -39,8 +39,8 @@ def pmx_crossover(parent1, parent2):
             Individual([child2_layer1, child2_layer2]))
 
 def ox_crossover(parent1, parent2):
-    p1_layer1, p1_layer2 = parent1.chromosome
-    p2_layer1, p2_layer2 = parent2.chromosome
+    p1_layer1, p1_layer2 = parent1.chromosome[0], parent1.chromosome[1] 
+    p2_layer1, p2_layer2 = parent2.chromosome[0], parent2.chromosome[1]
 
     size = len(p1_layer1)
     cx_point1, cx_point2 = sorted(random.sample(range(size), 2))
@@ -72,8 +72,8 @@ def ox_crossover(parent1, parent2):
             Individual([child2_layer1, child2_layer2]))
 
 def cx_crossover(parent1, parent2):
-    p1_layer1, p1_layer2 = parent1.chromosome
-    p2_layer1, p2_layer2 = parent2.chromosome
+    p1_layer1, p1_layer2 = parent1.chromosome[0], parent1.chromosome[1]
+    p2_layer1, p2_layer2 = parent2.chromosome[0], parent2.chromosome[1]    
 
     size = len(p1_layer1)
 
