@@ -372,7 +372,7 @@ def find_solution(truck_routes: List[List[int]], drone_trips: List[List[int]], p
                     for iii in range(1, len(customers_to_serve)):
                         cus = customers_to_serve[iii]
                         drone_arrive_time = ready_time + problem.launch_time + problem.distance_matrix_drone[customers_to_serve[iii -1]][cus]/problem.speed_of_drone + problem.land_time
-                        drone_wait_duration = max(0, problem.customer_list[cus].arrive_time)
+                        drone_wait_duration = max(0, problem.customer_list[cus].arrive_time - drone_arrive_time)
                         consumption_energy_new = consumption_energy_new + problem.energy_consumption_rate*(problem.weight_of_drone + total_capacity_drone)*(problem.launch_time + problem.distance_matrix_drone[customers_to_serve[iii -1]][cus]/problem.speed_of_drone + problem.land_time + drone_wait_duration) + problem.energy_consumption_rate*(problem.weight_of_drone + total_capacity_drone + problem.customer_list[cus].quantity)*(problem.customer_list[cus].service_time)
                         total_capacity_drone = total_capacity_drone + problem.customer_list[cus].quantity
                         ready_time = ready_time + problem.launch_time + problem.distance_matrix_drone[customers_to_serve[iii -1]][cus]/problem.speed_of_drone + problem.land_time + problem.customer_list[cus].service_time + drone_wait_duration
@@ -416,10 +416,16 @@ def find_solution(truck_routes: List[List[int]], drone_trips: List[List[int]], p
                             temp_best_recive = deepcopy(temp_recive_drone)
 
                 if temp_best_assigned != None:
-                    best_assigned_customer = best_assigned_customer + temp_best_assigned[1:]
-                    best_recive_done = best_recive_done + temp_best_recive[1:]
-                    best_arrive_time = best_arrive_time + temp_best_arrive[1:]
-                    best_leave_time = best_leave_time + temp_leave_time[1:]
+                    if best_recive_done[-1] != 0:
+                        best_assigned_customer = best_assigned_customer + temp_best_assigned[1:]
+                        best_recive_done = best_recive_done + temp_best_recive[1:]
+                        best_arrive_time = best_arrive_time + temp_best_arrive[1:]
+                        best_leave_time = best_leave_time + temp_best_leave[1:]
+                    else:
+                        best_assigned_customer = best_assigned_customer[:-1] + temp_best_assigned[1:]
+                        best_recive_done = best_recive_done[:-1] + temp_best_recive[1:]
+                        best_arrive_time = best_arrive_time[:-1] + temp_best_arrive[1:]
+                        best_leave_time = best_leave_time[:-1] + temp_best_leave[1:]
                 
                 if best_recive_done[-1] == 0:
                     drone_trip_ob = Drone_Trip(best_assigned_customer, best_recive_done, best_arrive_time, best_leave_time)
@@ -437,7 +443,7 @@ def find_solution(truck_routes: List[List[int]], drone_trips: List[List[int]], p
                             if cus_update in truck_sol.assigned_customers:
                                 idx_truck = idx
                                 break
-                        update_truck_solution(truck_solutions[idx_truck], problem, cus_update, add_good, leave_time_update)
+                        truck_solutions[idx_truck] = update_truck_solution(truck_solutions[idx_truck], problem, cus_update, add_good, leave_time_update)
                     flag = True
                     unserved = unserved[len(best_assigned_customer) - 2:]
                     current_customer = best_assigned_customer[-1]
