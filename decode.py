@@ -51,13 +51,17 @@ def relaxed_repair(chromosome, problem: Problem):
         k = len(problem.customer_list)
         d = len(problem.customer_list) + problem.number_of_trucks
 
-        cur_truck_part = k
+        def nearest_truck_partition(lst):
+            for idx, e in enumerate(lst):
+                if e in range(k, d):
+                   return idx
+            return None
+
         for i in range(len(chromosome[0])):
             # partition numbers in 1st layer of chromosome
             if chromosome[0][i] >= k and chromosome[0][i] < d:
                 truck_routes.append(tmp_truck_route)
                 tmp_truck_route = []
-                cur_truck_part = cur_truck_part + 1
                 continue
             elif (
                 chromosome[0][i] >= d
@@ -76,10 +80,10 @@ def relaxed_repair(chromosome, problem: Problem):
                     tmp_truck_route.append(chromosome[0][i])
                 else:
                     # if violate truck capacity, insert current partition into this position
-                    idx = chromosome[0].index(cur_truck_part)
+                    idx = nearest_truck_partition(chromosome[0][i:])
                     chromosome[0].pop(idx)
                     chromosome[1].pop(idx)
-                    chromosome[0].insert(i, cur_truck_part)
+                    chromosome[0].insert(i, chromosome[0][idx])
                     chromosome[1].insert(i, 0)
             elif chromosome[1][i] == 1: # drone customer
                 if (
@@ -94,10 +98,11 @@ def relaxed_repair(chromosome, problem: Problem):
                     ):
                         tmp_truck_route.append(chromosome[0][i])
                     else:
-                        idx = chromosome[0].index(cur_truck_part)
+                     
+                        idx = nearest_truck_partition(chromosome[0][i:])
                         chromosome[0].pop(idx)
                         chromosome[1].pop(idx)
-                        chromosome[0].insert(i, cur_truck_part)
+                        chromosome[0].insert(i, chromosome[0][idx])
                         chromosome[1].insert(i, 0)
 
         truck_routes.append(tmp_truck_route)
@@ -174,8 +179,7 @@ def relaxed_repair(chromosome, problem: Problem):
         drone_triplists = []
         drone_violated = False
         for drone_route in drone_routes:
-            triplist = []
-            # drone_route.sort(key=lambda cust: problem.customer_list[cust].service_time)
+            #pairs = list(combinations())
             for drone_cust in drone_route:
                 arrival = problem.customer_list[drone_cust].arrive_time
                 depart = arrival + problem.customer_list[drone_cust].service_time
@@ -201,6 +205,8 @@ def relaxed_repair(chromosome, problem: Problem):
                                 time_interval[ld_cust][1],
                             ],
                         )
+                        if problem.check_energy_drone(drone_trip):
+                            
                 '''
                 # find set of launching customers
                 lch_truck_custs = [
@@ -456,7 +462,6 @@ def schedule(chromosome, truck_routes, drone_triplists, problem: Problem):
                 )
                 truck_route_idx[truck_id] = truck_route_idx[truck_id] + 1
                 departed[cur_cust] = True
-            print(truck_route_idx[truck_id])
     # build the solution in required format
     truck_sols = []
     for truck_id in range(problem.number_of_trucks):
@@ -517,6 +522,7 @@ def decode(individual: Individual, problem: Problem):
             return None
         truck_routes, drone_triplists = relaxed_repair(chromosome, problem)
 
+        print("before scheduling:")
         print(truck_routes)
         print(drone_triplists)
         
