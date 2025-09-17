@@ -111,7 +111,8 @@ def run_moead(processing_number, problem, indi_list, pop_size, max_gen, neighbor
         arg.append((problem, individual))
     result = pool.starmap(cal_fitness, arg)
     for individual, fitness in zip(moead_pop.indivs, result):
-        individual.objectives = fitness
+        individual.chromosome = fitness[0]
+        individual.objectives = fitness[1:]
     
     moead_pop.update_external(moead_pop.indivs)
     # moead_pop.update_weights(problem, moead_pop.indivs)
@@ -128,7 +129,8 @@ def run_moead(processing_number, problem, indi_list, pop_size, max_gen, neighbor
             arg.append((problem, individual))
         result = pool.starmap(cal_fitness, arg)
         for individual, fitness in zip(offspring, result):
-            individual.objectives = fitness
+            individual.chromosome = fitness[0]
+            individual.objectives = fitness[1:]
         moead_pop.update_external(offspring)
         moead_pop.indivs.extend(offspring)
         # moead_pop.update_weights(problem, offspring)
@@ -139,6 +141,5 @@ def run_moead(processing_number, problem, indi_list, pop_size, max_gen, neighbor
             Pareto_store.append(list(indi.objectives))
         history[gen + 1] = Pareto_store
     pool.close()
-
-    print("MOEA/D Done: ", cal_hv_front(moead_pop.external_pop, np.array([1, 1, 10, 10])))
+    print("MOEA/D Done: ", cal_hv_front(moead_pop.external_pop, np.array([10000, 10000, 1000])))
     return history

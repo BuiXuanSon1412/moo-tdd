@@ -151,21 +151,24 @@ def run_pfgmoea(processing_number, problem, indi_list, pop_size, max_gen, GK, si
     print("PFG MOEA")
     pop = PFGMOEAPopulation(pop_size)
     pop.pre_indi_gen(indi_list)
-
+    history = {}
     pool = multiprocessing.Pool(processing_number)
     arg = []
     for individual in pop.indivs:
         arg.append((problem, individual))
     result = pool.starmap(cal_fitness, arg)
     for individual, fitness in zip(pop.indivs, result):
-        individual.objectives = fitness
+        individual.chromosome = fitness[0]
+        individual.objectives = fitness[1:]
 
     pop.natural_selection()
-    history_hv = []
-    history_hv.append(cal_hv_front(pop.ParetoFront[0], np.array([1, 1, 1])))
-    print("Generation 0: ", history_hv[-1])
+    Pareto_store = []
+    for indi in pop.ParetoFront[0]:
+        Pareto_store.append(list(indi.objectives))
+    history[0] = Pareto_store
+    print("Gen 0 Done")
 
-    history = {}
+    # history = {}
     # history[0] = [calculate_fitness(problem, i) for i in pop.ParetoFront[0]]
 
     for gen in range(max_gen):
@@ -192,11 +195,14 @@ def run_pfgmoea(processing_number, problem, indi_list, pop_size, max_gen, GK, si
             arg.append((problem, individual))
         result = pool.starmap(cal_fitness, arg)
         for individual, fitness in zip(offspring, result):
-            individual.objectives = fitness
+            individual.chromosome = fitness[0]
+            individual.objectives = fitness[1:]
         pop.indivs.extend(offspring)
         pop.natural_selection()
-        history_hv.append(cal_hv_front(pop.ParetoFront[0], np.array([1, 1, 1])))
-        print("Generation {}: ".format(gen + 1), history_hv[-1])
+        print("Generation {}: Done".format(gen + 1))
+        for indi in pop.ParetoFront[0]:
+            Pareto_store.append(list(indi.objectives))
+        history[gen + 1] = Pareto_store
 
         # history[gen + 1] = [calculate_fitness(problem, i) for i in pop.ParetoFront[0]]
 
@@ -210,4 +216,5 @@ def run_pfgmoea(processing_number, problem, indi_list, pop_size, max_gen, GK, si
     # return result
 
     # print(history)
-    return history_hv
+    print("PFG -MOEA Done: ", cal_hv_front(pop.ParetoFront[0], np.array([10000, 10000, 1000])))
+    return history

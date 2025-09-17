@@ -17,7 +17,7 @@ def random_binary_vector(n, p):
             vec.append(1)
     return vec
 
-def cal_fitness(indi: Individual, problem: Problem):
+def cal_fitness(problem: Problem, indi: Individual):
     temp_chromosome = deepcopy(indi.chromosome)
     temp_chromosome = repair_distance(temp_chromosome, problem)
     temp_chromosome = repair_capacity(temp_chromosome, problem)
@@ -50,13 +50,80 @@ def init_random(problem: Problem, pro_drone):
     per_customers = random_permutation(dimension)
     drone_truck_assign = random_binary_vector(dimension, pro_drone)
     chromosome = [per_customers, drone_truck_assign]
-    print(chromosome)
     indi = Individual(chromosome)
     return indi
 
 
+import random
+
+def crossover_PMX(problem: Problem, parent1: Individual, parent2: Individual):
+    size = len(parent1.chromosome[0])
+    p1_perm, p1_bin = parent1.chromosome
+    p2_perm, p2_bin = parent2.chromosome
+
+    # chọn 2 điểm cắt
+    cx_point1 = random.randint(0, size - 2)
+    cx_point2 = random.randint(cx_point1 + 1, size - 1)
+
+    off1_perm = [None] * size
+    off2_perm = [None] * size
+
+    # copy đoạn cắt từ cha
+    off1_perm[cx_point1:cx_point2 + 1] = p1_perm[cx_point1:cx_point2 + 1]
+    off2_perm[cx_point1:cx_point2 + 1] = p2_perm[cx_point1:cx_point2 + 1]
+
+    # PMX mapping
+    for i in range(cx_point1, cx_point2 + 1):
+        if p2_perm[i] not in off1_perm:
+            pos = i
+            while off1_perm[pos] is not None:
+                pos = p2_perm.index(p1_perm[pos])
+            off1_perm[pos] = p2_perm[i]
+
+        if p1_perm[i] not in off2_perm:
+            pos = i
+            while off2_perm[pos] is not None:
+                pos = p1_perm.index(p2_perm[pos])
+            off2_perm[pos] = p1_perm[i]
+
+    # điền chỗ trống
+    for i in range(size):
+        if off1_perm[i] is None:
+            off1_perm[i] = p2_perm[i]
+        if off2_perm[i] is None:
+            off2_perm[i] = p1_perm[i]
+
+    # ánh xạ lại binary theo vị trí
+    idx_map1 = {val: i for i, val in enumerate(off1_perm)}
+    idx_map2 = {val: i for i, val in enumerate(off2_perm)}
+    off1_bin = [0] * size
+    off2_bin = [0] * size
+
+    for i, val in enumerate(p1_perm):
+        off1_bin[idx_map1[val]] = p1_bin[i]
+    for i, val in enumerate(p2_perm):
+        off2_bin[idx_map2[val]] = p2_bin[i]
+
+    # trả về offspring
+    off1 = Individual([off1_perm, off1_bin])
+    off2 = Individual([off2_perm, off2_bin])
+    return off1, off2
 
 
-    
+def mutation_flip(problem: Problem, indi: Individual, num_flips=None):
+    perm, bin_vec = indi.chromosome
+    size = len(perm)
 
+    if num_flips is None:
+        num_flips = max(1, size // 10)  # mặc định 10% số gene
 
+    # copy để không sửa trực tiếp parent
+    new_bin = bin_vec.copy()
+
+    flip_positions = random.sample(range(size), num_flips)
+    for pos in flip_positions:
+        new_bin[pos] = 1 - new_bin[pos]  # lật bit
+
+    # tạo offspring mới
+    offspring = Individual([perm.copy(), new_bin])
+    return offspring
