@@ -262,6 +262,7 @@ def find_solution(truck_routes: List[List[int]], drone_trips: List[List[int]], p
                 # print(depot_consumption_energy) 
                 drone_arrive_to_customer_time = drone_launch_time + drone_fly_duration 
 
+
                 customer_wait_time = drone_arrive_to_customer_time - problem.customer_list[first_unserved_customer].arrive_time
                 # print("customer_wait_time", customer_wait_time)
                 drone_leave_time = drone_launch_time + drone_fly_duration+ problem.customer_list[first_unserved_customer].service_time
@@ -314,7 +315,7 @@ def find_solution(truck_routes: List[List[int]], drone_trips: List[List[int]], p
                 best_recive_done = [0, problem.customer_list[launch_node_candidate_tup[-1]].quantity]
                 current_cus = launch_node_candidate_tup[-1]
                 current_drone_leave_time = launch_node_candidate_tup[3]
-                current_consumption_energey = launch_node_candidate_tup[4]
+                current_consumption_energey = launch_node_candidate_tup[6]
                 current_quantity = problem.customer_list[current_cus].quantity
                 current_system_time = launch_node_candidate_tup[3]
                 ucv_land = []
@@ -330,9 +331,10 @@ def find_solution(truck_routes: List[List[int]], drone_trips: List[List[int]], p
                     ucv_land.append((0, next_distance, drone_leave_time))
 
                 for truck_sol in truck_solutions:
-                    for pos, cus in enumerate(truck_sol.assigned_customers):
-                        if np.sum(truck_sol.recived_truck) + np.sum(truck_sol.recived_drone) + problem.customer_list[cus].quantity > problem.truck_capacity:
+                    if np.sum(truck_sol.recived_truck) + np.sum(truck_sol.recived_drone) + sum(best_recive_done) > problem.truck_capacity:
                             continue
+                    for pos, cus in enumerate(truck_sol.assigned_customers):
+        
                         drone_fly_duration = problem.launch_time + problem.land_time + problem.distance_matrix_drone[current_cus][cus]/problem.speed_of_drone
                         energy_fly_to_land_point = problem.energy_consumption_rate*(problem.weight_of_drone + current_quantity)*drone_fly_duration
                         drone_land_time = current_drone_leave_time + drone_fly_duration
@@ -363,13 +365,14 @@ def find_solution(truck_routes: List[List[int]], drone_trips: List[List[int]], p
                     temp_leave_time = []
                     temp_recive_drone = []
                     total_capacity_drone = problem.customer_list[customers_to_serve[0]].quantity
-                    consumption_energy_new = 0
+                    consumption_energy_new = current_consumption_energey
                     ready_time = current_drone_leave_time
                     temp_arrive_time.append(launch_node_candidate_tup[4])
                     temp_leave_time.append(ready_time)
                     temp_recive_drone.append(total_capacity_drone)
 
                     for iii in range(1, len(customers_to_serve)):
+                        # print("customer_to_serve", customers_to_serve)
                         cus = customers_to_serve[iii]
                         drone_arrive_time = ready_time + problem.launch_time + problem.distance_matrix_drone[customers_to_serve[iii -1]][cus]/problem.speed_of_drone + problem.land_time
                         drone_wait_duration = max(0, problem.customer_list[cus].arrive_time - drone_arrive_time)
@@ -379,6 +382,8 @@ def find_solution(truck_routes: List[List[int]], drone_trips: List[List[int]], p
                         temp_arrive_time.append(drone_arrive_time)
                         temp_leave_time.append(ready_time)
                         temp_recive_drone.append(problem.customer_list[cus].quantity)
+
+                        # print("Log nang luong:", )
                     if total_capacity_drone > problem.drone_capacity or consumption_energy_new + current_consumption_energey > problem.drone_energy:
                         break
                     else:
