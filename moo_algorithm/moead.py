@@ -141,5 +141,5 @@ def run_moead(processing_number, problem, indi_list, pop_size, max_gen, neighbor
             Pareto_store.append(list(indi.objectives))
         history[gen + 1] = Pareto_store
     pool.close()
-    print("MOEA/D Done: ", cal_hv_front(moead_pop.external_pop, np.array([10000, 10000, 1000])))
+    print("MOEA/D Done: ", cal_hv_front(moead_pop.external_pop, np.array([100000, 10000, 100000])))
     return history

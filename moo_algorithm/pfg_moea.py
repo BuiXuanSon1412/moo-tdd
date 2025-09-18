@@ -216,5 +216,5 @@ def run_pfgmoea(processing_number, problem, indi_list, pop_size, max_gen, GK, si
     # return result
 
     # print(history)
-    print("PFG -MOEA Done: ", cal_hv_front(pop.ParetoFront[0], np.array([10000, 10000, 1000])))
+    print("PFG -MOEA Done: ", cal_hv_front(pop.ParetoFront[0], np.array([100000, 10000, 100000])))
     return history
