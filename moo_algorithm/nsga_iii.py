@@ -582,5 +582,5 @@ def run_nsga_iii(processing_number, problem, indi_list, pop_size, max_gen, cross
                 Pareto_store.append(list(indi.objectives))
             history[gen+1] = Pareto_store    
     pool.close()
-    print("NSGA-III Done: ", cal_hv_front(nsga_iii_pop.ParetoFront[0], np.array([10000,10000,1000])))
+    print("NSGA-III Done: ", cal_hv_front(nsga_iii_pop.ParetoFront[0], np.array([100000,10000,100000])))
     return history

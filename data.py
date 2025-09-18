@@ -61,8 +61,10 @@ def create_distance_matrices(customers):
     return distance_matrix_truck, distance_matrix_drone
 
 
-def load_data(file_path, number_customer, number_of_trucks, number_of_drones):
+def load_data(file_path, number_customer, number_of_trucks, number_of_drones, capacity_of_truck_mofi = None):
     customer_list, truck_capacity = read_data_file(file_path)
+    if capacity_of_truck_mofi != None:
+        truck_capacity = capacity_of_truck_mofi
     customer_list = customer_list[:number_customer+1]
     drone_capacity = 30
     weight_of_drone = 10
