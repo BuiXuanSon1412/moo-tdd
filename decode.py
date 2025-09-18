@@ -200,8 +200,8 @@ def relaxed_repair(chromosome, problem: Problem):
                 lch_wait = None
                 ld_wait = None
                 
-                arrive = [None for _ in range(len(trip))]
-                leave = [None for _ in range(len(trip))]
+                arrive = [0 for _ in range(len(trip))]
+                leave = [0 for _ in range(len(trip))]
                 
                 arrive[0] = truck_schedule[lch_cust][0]
                 if truck_schedule[lch_cust][0] <= problem.customer_list[trip[1]].arrive_time - time_by_drone[lch_cust][trip[1]] <= truck_schedule[lch_cust][1]:
@@ -261,7 +261,7 @@ def relaxed_repair(chromosome, problem: Problem):
                 
                 while drone_route:
                     
-                    tmp_lch_cust, tmp_ld_cust, tmp_arrive, tmp_leave = opt_pair_cust(trip + [drone_route[0]])
+                    tmp_lch_cust, tmp_ld_cust = opt_pair_cust(trip + [drone_route[0]])
                     if tmp_lch_cust is None:
                         if opt_lch_cust is None:
                             chro_idx = mp_cust_chro[drone_route[0]]
@@ -269,7 +269,7 @@ def relaxed_repair(chromosome, problem: Problem):
                             violated = True
                         break
                     
-                    opt_lch_cust, opt_ld_cust, opt_arrive, opt_leave = tmp_lch_cust, tmp_ld_cust, tmp_arrive, tmp_leave
+                    opt_lch_cust, opt_ld_cust = tmp_lch_cust, tmp_ld_cust 
                     trip.append(drone_route[0])
                     drone_route.pop(0)         
                 

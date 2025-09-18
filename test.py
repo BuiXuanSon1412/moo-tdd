@@ -4,11 +4,14 @@ from moo_algorithm.nsga_ii import run_nsga_ii
 from moo_algorithm.pfg_moea import run_pfgmoea
 from moo_algorithm.nsga_iii import run_nsga_iii
 from moo_algorithm.moead import run_moead, init_weight_vectors_3d
+from time import time
+import json
+
 if __name__ == "__main__":
     number_customer = 100
     number_truck = 10
     number_drone = 15
-    problem = load_data(r"data\100customers\r110.txt", number_customer, number_truck, number_drone)
+    problem = load_data(r"data/100customers/r110.txt", number_customer, number_truck, number_drone)
     for customer in problem.customer_list:
         print(customer)
 
@@ -23,7 +26,19 @@ if __name__ == "__main__":
     for i in range(pop_size):
         indi = init_random(problem, pro_drone)
         indi_list.append(indi)
+    
+    # NSGA II
+    nsgaii_start = time.time()
     result_nsga_ii = run_nsga_ii(processing_number, problem, indi_list, pop_size, max_gen, crossover_PMX, mutation_flip, crossover_rate, mutation_rate, cal_fitness)
+    nsgaii_end = time.time()
+    nsgaii_result = {}
+    nsgaii_result['time'] = nsgaii_end - nsgaii_start
+    nsgaii_result['history'] = result_nsga_ii
+    nsgaii_path = r"result/100customers/NSGAII/c100.json" +  str(N) +"RIS.json"
+    with open(nsgaii_path, 'w') as f:
+        json.dump(nsgaii_result, f)
+    
+    
     
     GK = 5
     sigma = 0.1
