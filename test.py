@@ -40,7 +40,7 @@ if __name__ == "__main__":
     sigma = 0.1
 
     # Sinh danh sách file data
-    data_files = build_data_paths(number_customer)
+    data_files = build_data_paths(number_customer, types=["C", "R", "RC"], K_list=[1,2], i=4, j_list=[1,2,3])
 
     for data_file in data_files:
         print(f"Đang chạy file: {data_file}")
