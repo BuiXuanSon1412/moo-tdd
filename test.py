@@ -7,6 +7,24 @@ from moo_algorithm.moead import run_moead, init_weight_vectors_3d
 import json, os, time
 
 
+#Store indi_list to json file
+def restore_initial_population(file_path, indi_list):
+    indi_json = []
+    for indi in indi_list:
+        indi_data = {
+            "chromosome_customer": indi.chromosome[0],
+            "chromosome_assign": indi.chromosome[1]
+        }
+        indi_json.append(indi_data)
+
+    # 🔹 Tạo thư mục cha nếu chưa có
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+    result = {"population": indi_json}
+
+    # 🔹 Ghi dữ liệu JSON
+    with open(file_path, 'w') as f:
+        json.dump(result, f)
 
 
 
@@ -52,6 +70,10 @@ if __name__ == "__main__":
         for i in range(pop_size):
             indi = init_random(problem, pro_drone)
             indi_list.append(indi)
+
+            init_pop_path = os.path.join("init_population", data_file)
+
+            restore_initial_population(init_pop_path, indi_list)
 
         # Tạo thư mục kết quả gốc
         base_path = os.path.join("result", f"{number_customer}customers")
