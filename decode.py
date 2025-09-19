@@ -110,25 +110,6 @@ def relaxed_repair(chromosome, problem: Problem):
 
         truck_routes.append(tmp_truck_route)
         drone_routes.append(tmp_drone_route)
-        print("Chromosome layer 1:", chromosome[0])
-        print("Chromosome layer 2:", chromosome[1])
-        print("Truck routes :", truck_routes)
-        print("Drone routes:", drone_routes)
-        if all(
-            problem.check_capacity_truck_constraint(route) for route in truck_routes
-        ):
-            print("Truck capacity constraint satisfied")
-        else:
-            print("Truck capacity constraint violated")
-
-        if all(
-            problem.customer_list[cust].quantity <= problem.drone_capacity
-            for route in drone_routes
-            for cust in route
-        ):
-            print("Drone capacity constraint satisfied")
-        else:
-            print("Drone capacity constraint violated")
 
         # route-trip extraction from chromosome will be ended when all customers will be delivered by trucks
         # also all these customers are well distributed to do not violated capacity constraint of truck
@@ -136,6 +117,8 @@ def relaxed_repair(chromosome, problem: Problem):
             chromosome[0][i] >= k or chromosome[1][i] == 0
             for i in range(len(chromosome[1]))
         ):
+            drone_triplists = [[] for _ in range(problem.number_of_drones)]
+
             return truck_routes, drone_triplists
 
         # mapping customers to their indices in chromosome
@@ -194,7 +177,7 @@ def relaxed_repair(chromosome, problem: Problem):
             opt_lch_wait = None
             opt_ld_wait = None
             if (
-                sum([problem.customer_list[cust].quantity for cus in trip])
+                sum([problem.customer_list[cust].quantity for cust in trip])
                 > problem.drone_capacity
             ):
                 return opt_lch_cust, opt_ld_cust
@@ -363,8 +346,6 @@ def schedule(chromosome, truck_routes, drone_triplists, problem: Problem):
         [depart_depot] + truck_route + [return_depot] for truck_route in truck_routes
     ]
 
-    print(truck_routes)
-
     # rebuild drone trips by adjusting return depot annotation to 'return depot'
     for trips in drone_triplists:
         for i in range(len(trips)):
@@ -429,7 +410,6 @@ def schedule(chromosome, truck_routes, drone_triplists, problem: Problem):
             for truck_id, truck_route in enumerate(truck_routes)
         ]
     ):
-        print("get into the loop")
         # let each truck reaches the nearest landing customer on its route
         for truck_id in range(problem.number_of_trucks):
             truck_route = truck_routes[truck_id]  # route of current truck
@@ -441,7 +421,6 @@ def schedule(chromosome, truck_routes, drone_triplists, problem: Problem):
                 # current customer and next customer in the current truck route
                 cur_cust = truck_route[route_idx]
                 next_cust = truck_route[route_idx + 1]
-                print(cur_cust, next_cust)
                 # truck arrival time of the next customer based on the departture time of the current customer
                 truck_arrival[truck_id][route_idx + 1] = (
                     truck_depart[truck_id][
@@ -480,7 +459,6 @@ def schedule(chromosome, truck_routes, drone_triplists, problem: Problem):
 
         # let drones move that depart from arrived customers to arrived customer but departed yet
         for drone_id in range(problem.number_of_drones):
-            print(drone_triplists)
             trips = drone_triplists[drone_id]
 
             for trip_idx in range(len(trips)):
@@ -525,8 +503,6 @@ def schedule(chromosome, truck_routes, drone_triplists, problem: Problem):
                         )
                     ):
                         for cust in cur_trip:
-                            print("current customer:", cust)
-                            print("chromosome index:", mp_cust_chro[cust])
                             chromosome[1][mp_cust_chro[cust]] = 0
                         return None, None, None, None, None, None
                     # reduce the number of drones assembled at the landing customer by 1
@@ -548,8 +524,6 @@ def schedule(chromosome, truck_routes, drone_triplists, problem: Problem):
                 )
                 truck_route_idx[truck_id] = truck_route_idx[truck_id] + 1
                 departed[cur_cust] = True
-        for truck_idx in range(problem.number_of_trucks):
-            print(truck_route_idx[truck_idx])
 
     return (
         truck_routes,
@@ -583,7 +557,8 @@ def build_solution(
     for truck_id in range(problem.number_of_trucks):
         assigned_customers = truck_routes[truck_id][1:-1]
         recived_truck = [
-            problem.customer_list[cust].quantity for cust in assigned_customers
+            problem.customer_list[cust % return_depot].quantity
+            for cust in assigned_customers
         ]
         recived_drone = []
         for cust in assigned_customers:
@@ -637,11 +612,16 @@ def decode(individual: Individual, problem: Problem):
         if chromosome is None:
             return None
         truck_routes, drone_triplists = relaxed_repair(chromosome, problem)
+
+        # debug: view truck routes and drone trips after a relaxed version of repair
+        print("Truck route")
         for truck_id, truck_route in enumerate(truck_routes):
             print(truck_id, ":", truck_route)
+
+        print("Drone trips")
         for drone_id, trip_list in enumerate(drone_triplists):
             print(drone_id, ":", trip_list)
-        print(drone_triplists)
+        print()
 
         (
             truck_routes,

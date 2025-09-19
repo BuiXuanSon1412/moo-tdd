@@ -15,6 +15,25 @@ from data import load_data
 import json
 
 
+def restore_initial_population(file_path, indi_list):
+    indi_json = []
+    for indi in indi_list:
+        indi_data = {
+            "chromosome_customer": indi.chromosome[0],
+            "chromosome_assign": indi.chromosome[1],
+        }
+        indi_json.append(indi_data)
+
+    # 🔹 Tạo thư mục cha nếu chưa có
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+    result = {"population": indi_json}
+
+    # 🔹 Ghi dữ liệu JSON
+    with open(file_path, "w") as f:
+        json.dump(result, f)
+
+
 def build_data_paths(
     num_customers, types=["C", "R", "RC"], K_list=[1, 2], i=4, j_list=[1, 2, 3, 4, 5]
 ):
@@ -52,7 +71,7 @@ if __name__ == "__main__":
     for file in data_files:
         print(file)
 
-    for data_file in data_files[10:11]:
+    for data_file in data_files[17:18]:
         print(f"Đang chạy file: {data_file}")
         problem = load_data(
             data_file, number_customer, number_truck, number_drone, 2000
@@ -63,6 +82,8 @@ if __name__ == "__main__":
         for i in range(pop_size):
             indi = init_random(problem, pro_drone)
             indi_list.append(indi)
+            init_pop_path = os.path.join("init_population", data_file)
+            restore_initial_population(init_pop_path, indi_list)
 
         # Tạo thư mục kết quả gốc
         base_path = os.path.join("result", f"{number_customer}customers")
@@ -136,6 +157,7 @@ if __name__ == "__main__":
         with open(moead_path, "w") as f:
             json.dump(moead_result, f)
 
+        """
         ##### NSGA-III ############
         nsgaiii_start = time.time()
         nsgaiii_history = run_nsga_iii(
@@ -159,5 +181,5 @@ if __name__ == "__main__":
         os.makedirs(os.path.dirname(nsgaiii_path), exist_ok=True)
         with open(nsgaiii_path, "w") as f:
             json.dump(nsgaiii_result, f)
-
+        """
         print(f"Hoàn thành {data_file}, kết quả đã lưu.")
