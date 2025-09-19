@@ -52,7 +52,7 @@ if __name__ == "__main__":
     for file in data_files:
         print(file)
 
-    for data_file in data_files[8:9]:
+    for data_file in data_files[10:11]:
         print(f"Đang chạy file: {data_file}")
         problem = load_data(
             data_file, number_customer, number_truck, number_drone, 2000
