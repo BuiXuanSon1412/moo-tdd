@@ -1,9 +1,11 @@
 import os
 import time
+import data
 from moo_algorithm.nsga_ii import run_nsga_ii
 from moo_algorithm.nsga_iii import run_nsga_iii
 from moo_algorithm.pfg_moea import run_pfgmoea
 from moo_algorithm.moead import run_moead, init_weight_vectors_3d
+from population import Individual
 from utils import (
     crossover_PMX,
     mutation_flip,
@@ -51,6 +53,7 @@ def build_data_paths(
     return paths
 
 
+"""
 if __name__ == "__main__":
     number_customer = 100
     number_truck = 3
@@ -157,29 +160,101 @@ if __name__ == "__main__":
         with open(moead_path, "w") as f:
             json.dump(moead_result, f)
 
-        """
         ##### NSGA-III ############
-        nsgaiii_start = time.time()
-        nsgaiii_history = run_nsga_iii(
+        # nsgaiii_start = time.time()
+        # nsgaiii_history = run_nsga_iii(
+        #    processing_number,
+        #    problem,
+        #    indi_list,
+        #    pop_size,
+        #    max_gen,
+        #    crossover_PMX,
+        #    mutation_flip,
+        #    crossover_rate,
+        #    mutation_rate,
+        #    cal_fitness,
+        # )
+        # nsgaiii_end = time.time()
+        # nsgaiii_result = {
+        #    "time": nsgaiii_end - nsgaiii_start,
+        #    "history": nsgaiii_history,
+        # }
+        # nsgaiii_path = os.path.join(base_path, "NSGAIII", file_name)
+        # os.makedirs(os.path.dirname(nsgaiii_path), exist_ok=True)
+        # with open(nsgaiii_path, "w") as f:
+        #    json.dump(nsgaiii_result, f)
+        # print(f"Hoàn thành {data_file}, kết quả đã lưu.")
+"""
+
+if __name__ == "__main__":
+    number_customer = 100
+    number_truck = 3
+    number_drone = 4
+    processing_number = 8
+    pro_drone = 0.5
+    pop_size = 100
+    max_gen = 100
+    crossover_rate = 0.9
+    mutation_rate = 0.1
+    G = 3
+    sigma = 0.1
+
+    # Sinh danh sách file data
+    data_files = build_data_paths(
+        number_customer, types=["c", "r", "rc"], K_list=[1, 2], i=0, j_list=[1, 2, 3]
+    )
+    for file in data_files:
+        print(file)
+
+    for data_file in data_files[15:18]:
+        print(f"Đang chạy file: {data_file}")
+        problem = load_data(
+            data_file, number_customer, number_truck, number_drone, 2000
+        )
+
+        # Trích xuất quẩn thể ban đầu từ file
+
+        # Khởi tạo quần thể ban đầu
+        indi_list = []
+
+        init_pop_path = os.path.join("init_population", data_file[:-3] + "json")
+
+        with open(init_pop_path, "r") as file:
+            data = json.load(file)
+
+        popu = data["population"]
+        for indi in popu:
+            custs = indi["chromosome_customer"]
+            marks = indi["chromosome_assign"]
+            indi_list.append(Individual([custs, marks]))
+
+        # Tạo thư mục kết quả gốc
+        base_path = os.path.join("result", f"{number_customer}customers")
+        os.makedirs(base_path, exist_ok=True)
+
+        file_name = os.path.splitext(os.path.basename(data_file))[0] + ".json"
+
+        ##### PFGMOEA ############
+        pfg_start = time.time()
+        pfg_history = run_pfgmoea(
             processing_number,
             problem,
             indi_list,
             pop_size,
             max_gen,
+            G,
+            sigma,
             crossover_PMX,
             mutation_flip,
             crossover_rate,
             mutation_rate,
             cal_fitness,
         )
-        nsgaiii_end = time.time()
-        nsgaiii_result = {
-            "time": nsgaiii_end - nsgaiii_start,
-            "history": nsgaiii_history,
-        }
-        nsgaiii_path = os.path.join(base_path, "NSGAIII", file_name)
-        os.makedirs(os.path.dirname(nsgaiii_path), exist_ok=True)
-        with open(nsgaiii_path, "w") as f:
-            json.dump(nsgaiii_result, f)
-        """
+        pfg_end = time.time()
+        pfg_result = {"time": pfg_end - pfg_start, "history": pfg_history}
+        pfg_path = os.path.join(base_path, "PFGMOEA_GK3", file_name)
+        os.makedirs(os.path.dirname(pfg_path), exist_ok=True)
+        with open(pfg_path, "w") as f:
+            json.dump(pfg_result, f)
+
         print(f"Hoàn thành {data_file}, kết quả đã lưu.")
